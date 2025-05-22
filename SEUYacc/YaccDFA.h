@@ -42,4 +42,5 @@ extern vector< Producer> producerList;//产生式列表
 extern unordered_map<int, set<int> > firsts;
 void First();
 void printFirsts();
+void printLRState(const LRState& state);
 #endif // !YACCDFA_H

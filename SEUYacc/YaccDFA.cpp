@@ -1,49 +1,49 @@
-#include"YaccDFA.h"
+ï»¿#include"YaccDFA.h"
 #include<queue>
 unordered_map<int, set<int> > firsts;
 /*
-* Çó·ÇÖÕ½á·ûµÄfirst¼¯
+* æ±‚éç»ˆç»“ç¬¦çš„firsté›†
 */
 void First() {
-	//³õÊ¼»¯ÖÕ½á·û¼¯ÎªËü±¾Éí
+	//åˆå§‹åŒ–ç»ˆç»“ç¬¦é›†ä¸ºå®ƒæœ¬èº«
 	for (auto& t : IdTerminal) {
 		firsts[t.first] = { t.first };
 	}
-	//ÖÕ½á·û¼¯ ÏÈ³õÊ¼»¯Îª¿Õ
+	//ç»ˆç»“ç¬¦é›† å…ˆåˆå§‹åŒ–ä¸ºç©º
 	for (auto& t : IdNonterminal) {
 		firsts[t.first] = {};
 	}
-	bool change=true;//ÈÎÒâ·ÇÖÕ½á·ûµÄfirst¼¯ÊÇ·ñÓĞ¸üĞÂ
-	while (change)//ÈçÓĞ¸üĞÂ ¼ÌĞøµü´ú
+	bool change=true;//ä»»æ„éç»ˆç»“ç¬¦çš„firsté›†æ˜¯å¦æœ‰æ›´æ–°
+	while (change)//å¦‚æœ‰æ›´æ–° ç»§ç»­è¿­ä»£
 	{
 		change = false;
-		//±éÀú²úÉúÊ½¼¯ºÏ
+		//éå†äº§ç”Ÿå¼é›†åˆ
 		for (auto& producer : numproducerList) {
-			int left = producer.first;//µÃµ½×ó²à·ûºÅ
-			if (isTerminalid(left)) continue;//Ìø¹ıÖÕ½á·û
-			bool hasEpsilon = true;//¼ÙÉèµ±Ç°²úÉúÊ½ÄÜÍÆ³ö¿Õ¼¯
-			vector<int> right=producer.second;//µÃµ½²úÉúÊ½ÓÒ²à
-			//¶ÔÓÚ A ¡ú ¦Å µÄ²úÉúÊ½£¬right Îª¿Õ£¬´ËÊ±Ó¦Ö±½ÓÌí¼Ó ¦Å
+			int left = producer.first;//å¾—åˆ°å·¦ä¾§ç¬¦å·
+			if (isTerminalid(left)) continue;//è·³è¿‡ç»ˆç»“ç¬¦
+			bool hasEpsilon = true;//å‡è®¾å½“å‰äº§ç”Ÿå¼èƒ½æ¨å‡ºç©ºé›†
+			vector<int> right=producer.second;//å¾—åˆ°äº§ç”Ÿå¼å³ä¾§
+			//å¯¹äº A â†’ Îµ çš„äº§ç”Ÿå¼ï¼Œright ä¸ºç©ºï¼Œæ­¤æ—¶åº”ç›´æ¥æ·»åŠ  Îµ
 			if (right.empty()) {
 				firsts[left].insert(-1);
 				change = true;
 				continue;
 			}
-			for (auto& item : right)//±éÀúÓÒ²à·ûºÅ
+			for (auto& item : right)//éå†å³ä¾§ç¬¦å·
 			{
-				//È¡µ±Ç°·ûºÅµÄfirst¼¯
+				//å–å½“å‰ç¬¦å·çš„firsté›†
 				auto& thisSet = firsts[item];
-				//½«µ±Ç°·ûºÅµÄFIRST¼¯(³ı¦ÅÍâ)¼ÓÈë×ó²¿·ûºÅµÄFIRST¼¯
+				//å°†å½“å‰ç¬¦å·çš„FIRSTé›†(é™¤Îµå¤–)åŠ å…¥å·¦éƒ¨ç¬¦å·çš„FIRSTé›†
 				for (auto& i : thisSet) {
-					if (i == -1) continue;//Ìø¹ı¿Õ¼¯
-					if (firsts[left].count(i) == 0) { // Èç¹ûÎ´°üº¬¸Ã·ûºÅ
-						change = true; // ±ê¼ÇĞèÒª¼ÌĞøµü´ú
-						firsts[left].insert(i); // ¼ÓÈëFIRST¼¯
+					if (i == -1) continue;//è·³è¿‡ç©ºé›†
+					if (firsts[left].count(i) == 0) { // å¦‚æœæœªåŒ…å«è¯¥ç¬¦å·
+						change = true; // æ ‡è®°éœ€è¦ç»§ç»­è¿­ä»£
+						firsts[left].insert(i); // åŠ å…¥FIRSTé›†
 					}
 				}
 				if (thisSet.count(-1) == 0) {
 					hasEpsilon = false;
-					break; // ²»ÄÜÍÆ³ö¦Å£¬ÖÕÖ¹´¦ÀíºóĞø·ûºÅ
+					break; // ä¸èƒ½æ¨å‡ºÎµï¼Œç»ˆæ­¢å¤„ç†åç»­ç¬¦å·
 				}
 			}
 			if (hasEpsilon) {
@@ -64,62 +64,92 @@ void printFirsts() {
 		cout << "\n";
 	}
 }
+void printLRState(const LRState& state) {
+	// æ‰“å°çŠ¶æ€å·
+	std::cout << "State " << state.numberInt << ":\n";
+
+	// æ‰“å°æ‰€æœ‰LRé¡¹ç›®
+	std::cout << "  LR Items:\n";
+	for (const auto& item : state.LRItemsSet) {
+		const auto& prod = numproducerList[item.gramarInt];
+
+		// æ‰“å°äº§ç”Ÿå¼å·¦éƒ¨
+		std::cout << "    [" << prod.first << " â†’ ";
+
+		// æ‰“å°äº§ç”Ÿå¼å³éƒ¨ï¼Œæ ‡æ³¨ç‚¹çš„ä½ç½®
+		for (int i = 0; i < prod.second.size(); ++i) {
+			if (i == item.positionInt) std::cout << "â€¢ ";
+			std::cout << prod.second[i] << " ";
+		}
+		if (item.positionInt == prod.second.size()) std::cout << "â€¢";
+
+		// æ‰“å°å‘å‰çœ‹ç¬¦å·
+		std::cout << ", " << item.predictiveSymbol << "]\n";
+	}
+
+	// æ‰“å°è½¬ç§»è¾¹
+	std::cout << "  Transitions:\n";
+	for (const auto& edge : state.edgesMap) {
+		std::cout << "    On " << edge.first << " goto State " << edge.second << "\n";
+	}
+	std::cout << std::endl;
+}
 /*
-* ×´Ì¬ÄÚÀ©Õ¹
+* çŠ¶æ€å†…æ‰©å±•
 */
 void generateState(LRState state) {
-	//ĞÂ½¨¶ÓÁĞ
+	//æ–°å»ºé˜Ÿåˆ—
 	queue<LRItem> producers;
-	//¼ÓÈë²úÉúÊ½
+	//åŠ å…¥äº§ç”Ÿå¼
 	for (auto& p : state.LRItemsSet)
 		producers.push(p);
 	while (!producers.empty()) {
-		auto& p = producers.front();//È¡³ö×îÇ°ÃæµÄLRÏî
-		auto& producer = numproducerList[p.gramarInt];//È¡³ö¸ÃÏî¶ÔÓ¦µÄ²úÉúÊ½
+		auto& p = producers.front();//å–å‡ºæœ€å‰é¢çš„LRé¡¹
+		auto& producer = numproducerList[p.gramarInt];//å–å‡ºè¯¥é¡¹å¯¹åº”çš„äº§ç”Ÿå¼
 		vector<int> right = producer.second;
-		//ÅĞ¶ÏµãÊÇ·ñÔÚÄ©Î²
-		if (p.positionInt >= right.size()) producers.pop();//ÒÑ¾­·ÖÎöÍê±Ï µ¯³ö
-		//µãºóÊÇÖÕ½á·û
-		//È¡³öµãºó×Ö·û
+		//åˆ¤æ–­ç‚¹æ˜¯å¦åœ¨æœ«å°¾
+		if (p.positionInt >= right.size()) producers.pop();//å·²ç»åˆ†æå®Œæ¯• å¼¹å‡º
+		//ç‚¹åæ˜¯ç»ˆç»“ç¬¦
+		//å–å‡ºç‚¹åå­—ç¬¦
 		int after = right[p.positionInt];
-		if (isTerminalid(after)) producers.pop();//µãºóÊÇÖÕ½á·û µ¯³ö
-		//¶ÔµãºóÊÇ·ÇÖÕ½á·ûµÄÏîÄ¿½øĞĞÀ©Õ¹ ¼ÆËãÏòÇ°¿´·ûºÅ
-		//ÕÒµ½·ÇÖÕ½á·ûµÄËùÓĞ²úÉúÊ½
+		if (isTerminalid(after)) producers.pop();//ç‚¹åæ˜¯ç»ˆç»“ç¬¦ å¼¹å‡º
+		//å¯¹ç‚¹åæ˜¯éç»ˆç»“ç¬¦çš„é¡¹ç›®è¿›è¡Œæ‰©å±• è®¡ç®—å‘å‰çœ‹ç¬¦å·
+		//æ‰¾åˆ°éç»ˆç»“ç¬¦çš„æ‰€æœ‰äº§ç”Ÿå¼
 		set<int> lookaheads;
-		bool canDeriveEpsilon = true;//ÊÇ·ñÄÜÍÆ³ö¿Õ´®
+		bool canDeriveEpsilon = true;//æ˜¯å¦èƒ½æ¨å‡ºç©ºä¸²
 
-		// ¼ÆËã¦Â²¿·ÖµÄFIRST¼¯£¨µãºóµÄÊ£Óà·ûºÅ£©
+		// è®¡ç®—Î²éƒ¨åˆ†çš„FIRSTé›†ï¼ˆç‚¹åçš„å‰©ä½™ç¬¦å·ï¼‰
 		for (int i = p.positionInt + 1; i < right.size(); ++i) {
 			int symbol = right[i];
-			auto& firstSet = firsts[symbol];//È¡³öfirst¼¯
+			auto& firstSet = firsts[symbol];//å–å‡ºfirsté›†
 
-			// ¼ÓÈëFIRST(symbol)µÄ·Ç¦ÅÔªËØ£¨-1£©
+			// åŠ å…¥FIRST(symbol)çš„éÎµå…ƒç´ ï¼ˆ-1ï¼‰
 			for (int terminal : firstSet) {
 				if (terminal != -1) {
 					lookaheads.insert(terminal);//
 				}
 			}
-			//Ã»ÓĞÔªËØ»áÍÆ³ö¿Õ´®
+			//æ²¡æœ‰å…ƒç´ ä¼šæ¨å‡ºç©ºä¸²
 			if (firstSet.find(-1) == firstSet.end()) {
 				canDeriveEpsilon = false;
 				break;
 			}
 		}
-		// ¼ì²éÊÇ·ñÄÜÍÆ³ö¦Å ÈôÄÜ Ôò´ú±í¾ÍÊÇµ±Ç°²úÉúÊ½µÄÔ¤²â·û
+		// æ£€æŸ¥æ˜¯å¦èƒ½æ¨å‡ºÎµ è‹¥èƒ½ åˆ™ä»£è¡¨å°±æ˜¯å½“å‰äº§ç”Ÿå¼çš„é¢„æµ‹ç¬¦
 		if (canDeriveEpsilon) {
 			lookaheads.insert(p.predictiveSymbol);
 		}
-		//¸ù¾İµ±Ç°µÄÎÄ·¨²úÉúÊ½ºÍÔ¤²â·ûºÅ£¨lookahead£©Éú³ÉĞÂµÄ LR ÏîÄ¿£¨LRItem£©
-		for (int i = 0; i < numproducerList.size(); ++i) {//±éÀú²úÉúÊ½ ÕÒµ½µ±Ç°£¨µãºó·ÇÖÕ½á·û£©ÔÚ×ó±ßµÄËùÓĞ²úÉúÊ½
+		//æ ¹æ®å½“å‰çš„æ–‡æ³•äº§ç”Ÿå¼å’Œé¢„æµ‹ç¬¦å·ï¼ˆlookaheadï¼‰ç”Ÿæˆæ–°çš„ LR é¡¹ç›®ï¼ˆLRItemï¼‰
+		for (int i = 0; i < numproducerList.size(); ++i) {//éå†äº§ç”Ÿå¼ æ‰¾åˆ°å½“å‰ï¼ˆç‚¹åéç»ˆç»“ç¬¦ï¼‰åœ¨å·¦è¾¹çš„æ‰€æœ‰äº§ç”Ÿå¼
 			if (numproducerList[i].first == after) {
-				for (int lookahead : lookaheads) {//±éÀú¿ÉÄÜµÄÔ¤²â·û
-					//Õë¶ÔÃ¿Ò»¸öÏòÇ°¿´·ûºÅÉú³ÉÒ»¸öĞÂµÄ LR ÏîÄ¿
+				for (int lookahead : lookaheads) {//éå†å¯èƒ½çš„é¢„æµ‹ç¬¦
+					//é’ˆå¯¹æ¯ä¸€ä¸ªå‘å‰çœ‹ç¬¦å·ç”Ÿæˆä¸€ä¸ªæ–°çš„ LR é¡¹ç›®
 					// 
 					LRItem item(0, i, lookahead);
 					if (state.LRItemsSet.count(item) == 0) 
 						{
-							state.LRItemsSet.insert(item);//×´Ì¬ÄÚÀ©Õ¹ ÖØ¸´²åÈë»á×Ô¶¯È¥ÖØ£¿
-							producers.push(item); // ¼ÌĞø´¦ÀíĞÂÏîÄ¿
+							state.LRItemsSet.insert(item);//çŠ¶æ€å†…æ‰©å±• é‡å¤æ’å…¥ä¼šè‡ªåŠ¨å»é‡ï¼Ÿ
+							producers.push(item); // ç»§ç»­å¤„ç†æ–°é¡¹ç›®
 						}
 
 				}
@@ -129,51 +159,57 @@ void generateState(LRState state) {
 	}
 }
 /*
-* ×´Ì¬¼äÀ©Õ¹
+* çŠ¶æ€é—´æ‰©å±•
 */
 void LRDFA::extendState(LRState state) {
 	unordered_map<int, LRState> newStates;
-	//±éÀúµ±Ç°×´Ì¬µÄÏî¼¯
+	//éå†å½“å‰çŠ¶æ€çš„é¡¹é›†
 	for (auto& item : state.LRItemsSet) {
-		//È¡³ö²úÉúÊ½
+		//å–å‡ºäº§ç”Ÿå¼
 		auto& producer = numproducerList[item.gramarInt];
 		vector<int> right = producer.second;
-		//ÅĞ¶ÏµãµÄÎ»ÖÃ
+		//åˆ¤æ–­ç‚¹çš„ä½ç½®
 		if (item.positionInt >= right.size()) continue;
-		//ÒÆ½øÊ²Ã´·ûºÅ
+		//ç§»è¿›ä»€ä¹ˆç¬¦å·
 		int next = right[item.positionInt];
-		//²é±í
-		int nextState = state.edgesMap[next];//ÒÆ½ø×´Ì¬
-		LRItem newItem(item.positionInt + 1, item.gramarInt, item.predictiveSymbol);//ÒÆ½øºóµÃµ½µÄĞÂÏî
-		//ĞèÒªĞÂ½¨ĞÂ×´Ì¬
+		//æŸ¥è¡¨
+		int nextState = state.edgesMap[next];//ç§»è¿›çŠ¶æ€
+		LRItem newItem(item.positionInt + 1, item.gramarInt, item.predictiveSymbol);//ç§»è¿›åå¾—åˆ°çš„æ–°é¡¹
+		//éœ€è¦æ–°å»ºæ–°çŠ¶æ€
 		if (newStates.find(nextState) == newStates.end()) {
 			LRState newState;
-			newState.LRItemsSet.insert(newItem);//ÏîÄ¿¼ÓÈëĞÂ×´Ì¬
+			newState.LRItemsSet.insert(newItem);//é¡¹ç›®åŠ å…¥æ–°çŠ¶æ€
 			newState.numberInt = nextState;
-			newStates[nextState] = newState; // ½«ĞÂ×´Ì¬Ìí¼Óµ½×´Ì¬¼¯ºÏ
+			newStates[nextState] = newState; // å°†æ–°çŠ¶æ€æ·»åŠ åˆ°çŠ¶æ€é›†åˆ
 		}
 
 
 	}
 }
 /*
-* Éú³ÉDFA ¶¨Òå¿Õ¼¯£¨·ÇÖÕ½á·û£©µÄIDÎª-1£¬½áÊø·ûµÄIDÎª1000
+* ç”ŸæˆDFA å®šä¹‰ç©ºé›†ï¼ˆéç»ˆç»“ç¬¦ï¼‰çš„IDä¸º-1ï¼Œç»“æŸç¬¦çš„IDä¸º1000
 */
 LRDFA::LRDFA() {
-	auto& dfa = *this;//È¡µ±Ç°dfa
-	//³õÊ¼»¯µÚÒ»¸öÏî¼¯ ÎÄ·¨¿ªÊ¼·ûºÅµÄ²úÉúÊ½
+	auto& dfa = *this;//å–å½“å‰dfa
+	//åˆå§‹åŒ–ç¬¬ä¸€ä¸ªé¡¹é›† æ–‡æ³•å¼€å§‹ç¬¦å·çš„äº§ç”Ÿå¼
 	LRItem item0(0, 0, -2);
-	//µÃµ½first¼¯
+	//å¾—åˆ°firsté›†
 	First();
-	//½«´ı´¦Àí×´Ì¬Èë¶Ó
+	//å°†å¾…å¤„ç†çŠ¶æ€å…¥é˜Ÿ
+	//åˆå§‹åŒ–ä¸€ä¸ªçŠ¶æ€
+	LRState state;
+	state.numberInt = 0;//0å·çŠ¶æ€
 	queue<int> que;
-	que.push(0);//0×´Ì¬ÈëÕ»
+	que.push(0);//0çŠ¶æ€å…¥æ ˆ
+	//å°†çŠ¶æ€æ·»åŠ åˆ°dfaçš„çŠ¶æ€é›†ä¸­
+	//statesVec.push_back(0);
 	while (!que.empty()) {
-		//È¡³ö´ı´¦Àí×´Ì¬
+		//å–å‡ºå¾…å¤„ç†çŠ¶æ€
 		int currentState = que.front();
-		//×´Ì¬ÄÚ²¿À©Õ¹
-
-		//½«ĞÂÉú³ÉµÄ×´Ì¬Èë¶Ó
+		//çŠ¶æ€å†…éƒ¨æ‰©å±•
+		generateState(statesVec[currentState]);
+		printLRState(statesVec[currentState]);
+		//å°†æ–°ç”Ÿæˆçš„çŠ¶æ€å…¥é˜Ÿ
 
 	}
 }

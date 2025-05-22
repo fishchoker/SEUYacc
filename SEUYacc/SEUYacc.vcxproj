@@ -127,15 +127,24 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="LRTableBuilder.h" />
+    <ClInclude Include="ParserDriver.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="symbolList.h" />
     <ClInclude Include="YaccDFA.h" />
     <ClInclude Include="YaccParser.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="LRTableBuilder.cpp" />
     <ClCompile Include="maintest.cpp" />
+    <ClCompile Include="ParserDriver.cpp" />
     <ClCompile Include="symbolList.cpp" />
+    <ClCompile Include="testLRTableBuilder.cpp" />
     <ClCompile Include="YaccDFA.cpp" />
     <ClCompile Include="YaccParser.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="SEUYacc.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
