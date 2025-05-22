@@ -6,6 +6,7 @@
 #include<unordered_set>
 #include<map>
 #include<set>
+#include <queue>
 #include"YaccParser.h"
 #include"symbolList.h"
 using namespace std;
@@ -29,17 +30,26 @@ struct LRState {
 	//<发出边上符号，状态号>
 	set<LRItem> LRItemsSet;
 	//其中的edgesMap用于表示发出边，对于一个状态来说，每个类型的字符只可能有一种移进，所以使用普通的map 
-	// 带参数的构造函数
+	LRState()
+		: numberInt(-1) { // 初始化numberInt为-1，其他成员会自动使用默认构造函数
+		// edgesMap 和 LRItemsSet 会被默认构造为各自的空容器
+	}
+	LRState(const LRState& other)
+		: numberInt(other.numberInt),
+		edgesMap(other.edgesMap),
+		LRItemsSet(other.LRItemsSet) {
+		// 直接拷贝成员变量，unordered_map和set会自动拷贝它们的内容
+	}
 };
 struct LRDFA {
 	int startState = 0;
 	vector<LRState> statesVec;  //存储所有的LRState，状态集
+	void extendState(LRState& state, queue<int>& que);
 	LRDFA();
-	//
-	void extendState(LRState state);
 };
 extern vector< Producer> producerList;//产生式列表
 extern unordered_map<int, set<int> > firsts;
+void generateState(LRState& state);
 void First();
 void printFirsts();
 void printLRState(const LRState& state);

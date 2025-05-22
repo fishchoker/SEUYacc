@@ -139,7 +139,9 @@
     <ClCompile Include="maintest.cpp" />
     <ClCompile Include="ParserDriver.cpp" />
     <ClCompile Include="symbolList.cpp" />
-    <ClCompile Include="testLRTableBuilder.cpp" />
+    <ClCompile Include="testLRTableBuilder.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="YaccDFA.cpp" />
     <ClCompile Include="YaccParser.cpp" />
   </ItemGroup>

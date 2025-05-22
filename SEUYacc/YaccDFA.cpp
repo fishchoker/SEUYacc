@@ -1,5 +1,4 @@
 ﻿#include"YaccDFA.h"
-#include<queue>
 unordered_map<int, set<int> > firsts;
 /*
 * 求非终结符的first集
@@ -74,14 +73,14 @@ void printLRState(const LRState& state) {
 		const auto& prod = numproducerList[item.gramarInt];
 
 		// 打印产生式左部
-		std::cout << "    [" << prod.first << " → ";
+		std::cout << "    [" << prod.first << " -> ";
 
 		// 打印产生式右部，标注点的位置
 		for (int i = 0; i < prod.second.size(); ++i) {
-			if (i == item.positionInt) std::cout << "• ";
+			if (i == item.positionInt) std::cout << "· ";
 			std::cout << prod.second[i] << " ";
 		}
-		if (item.positionInt == prod.second.size()) std::cout << "•";
+		if (item.positionInt == prod.second.size()) std::cout << "· ";
 
 		// 打印向前看符号
 		std::cout << ", " << item.predictiveSymbol << "]\n";
@@ -97,7 +96,7 @@ void printLRState(const LRState& state) {
 /*
 * 状态内扩展
 */
-void generateState(LRState state) {
+void generateState(LRState& state) {
 	//新建队列
 	queue<LRItem> producers;
 	//加入产生式
@@ -108,7 +107,7 @@ void generateState(LRState state) {
 		auto& producer = numproducerList[p.gramarInt];//取出该项对应的产生式
 		vector<int> right = producer.second;
 		//判断点是否在末尾
-		if (p.positionInt >= right.size()) producers.pop();//已经分析完毕 弹出
+		if (p.positionInt >= right.size()) { producers.pop(); continue; }//已经分析完毕 弹出
 		//点后是终结符
 		//取出点后字符
 		int after = right[p.positionInt];
@@ -156,33 +155,42 @@ void generateState(LRState state) {
 			}
 
 		}
+		//弹出已经处理的项目
+		producers.pop();
 	}
 }
 /*
 * 状态间扩展
 */
-void LRDFA::extendState(LRState state) {
-	unordered_map<int, LRState> newStates;
+void LRDFA::extendState(LRState& state, queue<int>& que) {
 	//遍历当前状态的项集
+	//printLRState(state);
 	for (auto& item : state.LRItemsSet) {
 		//取出产生式
 		auto& producer = numproducerList[item.gramarInt];
 		vector<int> right = producer.second;
-		//判断点的位置
+		//判断点的位置 若在结尾跳过
 		if (item.positionInt >= right.size()) continue;
 		//移进什么符号
 		int next = right[item.positionInt];
-		//查表
-		int nextState = state.edgesMap[next];//移进状态
-		LRItem newItem(item.positionInt + 1, item.gramarInt, item.predictiveSymbol);//移进后得到的新项
-		//需要新建新状态
-		if (newStates.find(nextState) == newStates.end()) {
+		//移进得到的状态还未创建
+		if (state.edgesMap.find(next) == state.edgesMap.end()) {
+			LRItem newItem(item.positionInt + 1, item.gramarInt, item.predictiveSymbol);//移进后得到的新项
+			//需要新建新状态 新状态号->数组+1
 			LRState newState;
 			newState.LRItemsSet.insert(newItem);//项目加入新状态
-			newState.numberInt = nextState;
-			newStates[nextState] = newState; // 将新状态添加到状态集合
+			newState.numberInt = statesVec.size();
+			//为当前状态添加状态转移
+			//state.edgesMap[0] = 1;
+			state.edgesMap[next] = newState.numberInt;
+			// 将新状态加入队列，等待扩展
+			que.push(newState.numberInt);
+			//添加到dfa的状态集
+			//statesVec.push_back(newState);
+			cout << "Before push_back: " << &statesVec[0] << endl;
+			statesVec.push_back(newState);
+			cout << "After push_back: " << &statesVec[0] << endl;
 		}
-
 
 	}
 }
@@ -190,26 +198,27 @@ void LRDFA::extendState(LRState state) {
 * 生成DFA 定义空集（非终结符）的ID为-1，结束符的ID为1000
 */
 LRDFA::LRDFA() {
-	auto& dfa = *this;//取当前dfa
 	//初始化第一个项集 文法开始符号的产生式
-	LRItem item0(0, 0, -2);
+	LRItem item0(0, 0, 0);// 点位于起始 0号项 前瞻符为$
 	//得到first集
 	First();
 	//将待处理状态入队
 	//初始化一个状态
-	LRState state;
-	state.numberInt = 0;//0号状态
+	LRState startState;
+	startState.LRItemsSet.insert(item0);
+	startState.numberInt = 0;  // 0号状态作为起始状态
+	statesVec.push_back(startState);  // 将起始状态加入状态集合
+	//待处理队列
 	queue<int> que;
 	que.push(0);//0状态入栈
-	//将状态添加到dfa的状态集中
-	//statesVec.push_back(0);
 	while (!que.empty()) {
 		//取出待处理状态
 		int currentState = que.front();
 		//状态内部扩展
 		generateState(statesVec[currentState]);
-		printLRState(statesVec[currentState]);
+		//printLRState(statesVec[currentState]);
 		//将新生成的状态入队
-
+		extendState(statesVec[currentState], que);
+		que.pop();
 	}
 }
