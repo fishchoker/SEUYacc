@@ -21,8 +21,9 @@ struct LRItem {
 		}
 		return gramarInt < t.gramarInt;
 	}
-	LRItem(int gramar, int position, int predictive)
-		: gramarInt(gramar), positionInt(position), predictiveSymbol(predictive) {}
+	LRItem(int position,int gramar, int predictive)
+		:  positionInt(position),gramarInt(gramar), predictiveSymbol(predictive) {}
+	
 };
 struct LRState {
 	int numberInt = -1;//×´Ì¬ºÅ
@@ -52,5 +53,6 @@ extern unordered_map<int, set<int> > firsts;
 void generateState(LRState& state);
 void First();
 void printFirsts();
+void printLRItem(const LRItem& item);
 void printLRState(const LRState& state);
 #endif // !YACCDFA_H

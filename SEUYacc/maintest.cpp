@@ -33,7 +33,7 @@ int main() {
 	parser.getNonterminal();
 	init();//完成符号到整数的双向映射
 	First();
-	test();
+	//test();
 	LRDFA dfa;
 	return 0;
 }

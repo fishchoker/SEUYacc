@@ -63,6 +63,28 @@ void printFirsts() {
 		cout << "\n";
 	}
 }
+void printLRItem(const LRItem& item) {
+	// 获取产生式信息
+	const auto& prod = numproducerList[item.gramarInt];
+
+	// 打印产生式左部
+	std::cout << "[" << id2symbol(prod.first)<< " → ";
+
+	// 打印右部并标记点的位置
+	for (int i = 0; i < prod.second.size(); ++i) {
+		if (i == item.positionInt) std::cout << "·";
+		std::cout << id2symbol(prod.second[i]) << " ";
+	}
+
+	// 处理点在末尾的情况
+	if (item.positionInt == prod.second.size()) {
+		std::cout << "•";
+	}
+
+	// 打印向前看符号
+	std::cout << ", " << id2symbol(item.predictiveSymbol) << "]";
+}
+
 void printLRState(const LRState& state) {
 	// 打印状态号
 	std::cout << "State " << state.numberInt << ":\n";
@@ -73,17 +95,17 @@ void printLRState(const LRState& state) {
 		const auto& prod = numproducerList[item.gramarInt];
 
 		// 打印产生式左部
-		std::cout << "    [" << prod.first << " -> ";
+		std::cout << "    [" << id2symbol(prod.first) << " -> ";
 
 		// 打印产生式右部，标注点的位置
 		for (int i = 0; i < prod.second.size(); ++i) {
 			if (i == item.positionInt) std::cout << "· ";
-			std::cout << prod.second[i] << " ";
+			std::cout << id2symbol(prod.second[i]) << " ";
 		}
 		if (item.positionInt == prod.second.size()) std::cout << "· ";
 
 		// 打印向前看符号
-		std::cout << ", " << item.predictiveSymbol << "]\n";
+		std::cout << ", " << id2symbol(item.predictiveSymbol) << "]\n";
 	}
 
 	// 打印转移边
@@ -111,7 +133,8 @@ void generateState(LRState& state) {
 		//点后是终结符
 		//取出点后字符
 		int after = right[p.positionInt];
-		if (isTerminalid(after)) producers.pop();//点后是终结符 弹出
+		if (isTerminalid(after)) { producers.pop(); continue; }//点后是终结符 弹出
+		//cout << "添加非终结符产生式：" << id2symbol(after) << endl;
 		//对点后是非终结符的项目进行扩展 计算向前看符号
 		//找到非终结符的所有产生式
 		set<int> lookaheads;
@@ -145,6 +168,9 @@ void generateState(LRState& state) {
 					//针对每一个向前看符号生成一个新的 LR 项目
 					// 
 					LRItem item(0, i, lookahead);
+					cout << "将要添加的LR项：\n";
+					printLRItem(item);
+					cout << endl;
 					if (state.LRItemsSet.count(item) == 0) 
 						{
 							state.LRItemsSet.insert(item);//状态内扩展 重复插入会自动去重？
@@ -158,6 +184,8 @@ void generateState(LRState& state) {
 		//弹出已经处理的项目
 		producers.pop();
 	}
+	cout << "状态内部扩展完毕：\n";
+	
 }
 /*
 * 状态间扩展
@@ -181,19 +209,19 @@ void LRDFA::extendState(LRState& state, queue<int>& que) {
 			newState.LRItemsSet.insert(newItem);//项目加入新状态
 			newState.numberInt = statesVec.size();
 			//为当前状态添加状态转移
-			//state.edgesMap[0] = 1;
+			cout << "正在生成状态转移：" << id2symbol(next) << "->" << "状态：" << newState.numberInt << endl;
 			state.edgesMap[next] = newState.numberInt;
 			// 将新状态加入队列，等待扩展
 			que.push(newState.numberInt);
 			//添加到dfa的状态集
-			//statesVec.push_back(newState);
-			cout << "Before push_back: " << &statesVec[0] << endl;
+			//cout << "Before push_back: " << &statesVec[0] << endl;
 			statesVec.push_back(newState);
-			cout << "After push_back: " << &statesVec[0] << endl;
+			//cout << "After push_back: " << &statesVec[0] << endl;
 		}
 
 	}
 }
+//重复状态判断
 /*
 * 生成DFA 定义空集（非终结符）的ID为-1，结束符的ID为1000
 */
@@ -213,12 +241,13 @@ LRDFA::LRDFA() {
 	que.push(0);//0状态入栈
 	while (!que.empty()) {
 		//取出待处理状态
-		int currentState = que.front();
+		LRState currentState = statesVec[que.front()];
 		//状态内部扩展
-		generateState(statesVec[currentState]);
-		//printLRState(statesVec[currentState]);
+		generateState(currentState);
+		//printLRState(currentState);
 		//将新生成的状态入队
-		extendState(statesVec[currentState], que);
+		extendState(currentState, que);
+		printLRState(currentState);
 		que.pop();
 	}
 }
