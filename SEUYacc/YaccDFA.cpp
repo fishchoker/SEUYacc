@@ -238,7 +238,7 @@ void LRDFA::extendState(LRState& state, queue<int>& que) {
 				//cout << "转移到已有状态：" << id2symbol(next) << "->" << "状态：" << isExist << endl;
 				state.edgesMap[next] = isExist;
 				//更新dfa中的状态
-				states[isExist] = state;
+				states[state.numberInt] = state;
 			}
 			else {//否则需要加入dfa的状态集中
 				newState.numberInt = this->startState;//分配新状态号
