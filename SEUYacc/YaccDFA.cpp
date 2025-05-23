@@ -82,7 +82,18 @@ void printLRItem(const LRItem& item) {
 	}
 
 	// 打印向前看符号
-	std::cout << ", " << id2symbol(item.predictiveSymbol) << "]";
+	// 打印向前看符号
+	std::cout << ", ";
+
+	// 输出所有预测符号
+	bool first = true;
+	for (const auto& symbol : item.predictiveSymbol) {
+		if (!first) std::cout << " ";
+		std::cout << id2symbol(symbol);
+		first = false;
+	}
+
+	std::cout << "]";
 }
 
 void printLRState(const LRState& state) {
@@ -92,20 +103,8 @@ void printLRState(const LRState& state) {
 	// 打印所有LR项目
 	std::cout << "  LR Items:\n";
 	for (const auto& item : state.LRItemsSet) {
-		const auto& prod = numproducerList[item.gramarInt];
-
-		// 打印产生式左部
-		std::cout << "    [" << id2symbol(prod.first) << " -> ";
-
-		// 打印产生式右部，标注点的位置
-		for (int i = 0; i < prod.second.size(); ++i) {
-			if (i == item.positionInt) std::cout << "· ";
-			std::cout << id2symbol(prod.second[i]) << " ";
-		}
-		if (item.positionInt == prod.second.size()) std::cout << "· ";
-
-		// 打印向前看符号
-		std::cout << ", " << id2symbol(item.predictiveSymbol) << "]\n";
+		printLRItem(item);
+		cout << endl;
 	}
 
 	// 打印转移边
@@ -137,7 +136,7 @@ void LRDFA::generateState(LRState& state) {
 		if (isTerminalid(after)) { producers.pop(); continue; }//点后是终结符 弹出
 		//对点后是非终结符的项目进行扩展 计算向前看符号
 		//找到非终结符的所有产生式
-		set<int> lookaheads;
+		unordered_set<int> lookaheads;
 		bool canDeriveEpsilon = true;//是否能推出空串
 
 		// 计算β部分的FIRST集（点后的剩余符号）
@@ -159,15 +158,16 @@ void LRDFA::generateState(LRState& state) {
 		}
 		// 检查是否能推出ε 若能 则代表就是当前产生式的预测符
 		if (canDeriveEpsilon) {
-			lookaheads.insert(p.predictiveSymbol);
+			for (int symbol : p.predictiveSymbol) {
+				lookaheads.insert(symbol);
+			}
 		}
 		//根据当前的文法产生式和预测符号（lookahead）生成新的 LR 项目（LRItem）
 		for (int i = 0; i < numproducerList.size(); ++i) {//遍历产生式 找到当前（点后非终结符）在左边的所有产生式
 			if (numproducerList[i].first == after) {
-				for (int lookahead : lookaheads) {//遍历可能的预测符
 					//针对每一个向前看符号生成一个新的 LR 项目
 					// 
-					LRItem item(0, i, lookahead);
+					LRItem item(0, i, lookaheads);
 					/*cout << "将要添加的LR项：\n";
 					printLRItem(item);
 					cout << endl;*/
@@ -177,7 +177,6 @@ void LRDFA::generateState(LRState& state) {
 							producers.push(item); // 继续处理新项目
 						}
 
-				}
 			}
 
 		}
@@ -209,20 +208,24 @@ void LRDFA::extendState(LRState& state, queue<int>& que) {
 		- 如果该移进符号已经创建状态转移：加入产生式，对该状态重新做状态扩展，更新到dfa
 		- 如果该移进符号还未创建状态转移：新建一个临时状态加入产生式，做状态扩展，判断状态是否已经存在，更新到dfa
 		*/
-		//移进得到的状态还未创建 此处需要创建的是状态转移 如何判断是否需要转移到已有状态？
-		//如果移进符号得到的状态已经创建 但不知道是否需要新增产生式 如何判断？
+		//cout << "移进前：\n";
+		//printLRItem(item);
+		//cout << endl;
 		LRItem newItem(item.positionInt + 1, item.gramarInt, item.predictiveSymbol);//移进后得到的新项
+		//cout << "移进后：\n";
+		//printLRItem(newItem);
+		//cout << endl;
 		LRState newState;//可能的新状态
 		if (state.edgesMap.find(next) == state.edgesMap.end()) {//该移进符号还未创建状态转移
 			//需要新建新状态 新状态号->数组+1
 			newState.LRItemsSet.insert(newItem);//项目加入新状态
 			//对新生成的状态做内部扩展
 			generateState(newState);
-			cout << "处理产生式：\n";
-			printLRItem(newItem);
-			cout <<"移进符号" << id2symbol(next) << "将转移到\n";
-			printLRState(newState);
-			cout << endl;
+			//cout << "处理产生式：\n";
+			//printLRItem(newItem);
+			//cout <<"移进符号" << id2symbol(next) << "将转移到\n";
+			//printLRState(newState);
+			//cout << endl;
 			//判断这个生成的新状态是否已经存在
 			int isExist = findExistingState(newState);
 			if (isExist != -1)//已经存在
@@ -262,7 +265,7 @@ void LRDFA::extendState(LRState& state, queue<int>& que) {
 */
 LRDFA::LRDFA() {
 	//初始化第一个项集 文法开始符号的产生式
-	LRItem item0(0, 0, 0);// 点位于起始 0号项 前瞻符为$
+	LRItem item0(0, 0, unordered_set<int>{0});// 点位于起始 0号项 前瞻符为$
 	//得到first集
 	First();
 	//将待处理状态入队
