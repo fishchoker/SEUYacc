@@ -1,5 +1,7 @@
 ﻿#include"YaccDFA.h"
 unordered_map<int, set<int> > firsts;
+// 为自定义类型 LRItem 和 LRState 定义哈希函数
+
 /*
 * 求非终结符的first集
 */
@@ -184,9 +186,11 @@ void LRDFA::generateState(LRState& state) {
 		producers.pop();
 	}
 	
-	//更新dfa中的状态
-	states[state.numberInt] = state;
-	//printLRState(state);
+	//如果不行临时状态 更新dfa中的状态 
+	printLRState(state);
+	if(state.numberInt!=-1)
+		states[state.numberInt] = state;
+	
 }
 /*
 * 状态间扩展
@@ -243,7 +247,7 @@ void LRDFA::extendState(LRState& state, queue<int>& que) {
 				que.push(newState.numberInt);
 				//添加到dfa的状态集
 				//cout << "Before push_back: " << &statesVec[0] << endl;
-				states[this->startState] = newState;
+				states.push_back(newState);
 				this->startState = this->startState + 1;
 				//cout << "After push_back: " << &statesVec[0] << endl;
 			}
@@ -273,8 +277,8 @@ LRDFA::LRDFA() {
 	LRState start;
 	start.LRItemsSet.insert(item0);
 	start.numberInt = this->startState;  // 0号状态作为起始状态
-	states[this->startState]=start;  // 将起始状态加入状态集合
-	this->startState = this->startState + 1;	states[this->startState]=start;  // 将起始状态加入状态集合
+	states.push_back(start);  // 将起始状态加入状态集合
+	this->startState = this->startState + 1;  // 将起始状态加入状态集合
 	//待处理队列
 	queue<int> que;
 	
@@ -295,10 +299,12 @@ LRDFA::LRDFA() {
 }
 //判断状态是否已经存在
 int LRDFA::findExistingState(const LRState& newState) {
-	auto it = states.find(newState.numberInt);  // 使用哈希表直接查
-	if (it != states.end()) {
-		// 如果找到了相同的状态，返回其状态号
-		return it->second.numberInt;
+	for (const auto& state : states) {
+		// 比较 LRItemsSet 是否一致
+		if (state.LRItemsSet == newState.LRItemsSet) {
+			// 如果一致，返回对应的状态号
+			return state.numberInt;
+		}
 	}
 	// 如果没有找到相同的状态，返回 -1 表示状态不存在
 	return -1;
