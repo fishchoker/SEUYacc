@@ -78,7 +78,7 @@ void printLRItem(const LRItem& item) {
 
 	// 处理点在末尾的情况
 	if (item.positionInt == prod.second.size()) {
-		std::cout << "•";
+		std::cout << "·";
 	}
 
 	// 打印向前看符号
@@ -111,14 +111,15 @@ void printLRState(const LRState& state) {
 	// 打印转移边
 	std::cout << "  Transitions:\n";
 	for (const auto& edge : state.edgesMap) {
-		std::cout << "    On " << edge.first << " goto State " << edge.second << "\n";
+		std::cout << "    On " << id2symbol(edge.first) <<edge.first << " goto State " << edge.second << "\n";
 	}
 	std::cout << std::endl;
 }
 /*
 * 状态内扩展
 */
-void generateState(LRState& state) {
+void LRDFA::generateState(LRState& state) {
+	cout << state.numberInt<< "状态内部扩展\n";
 	//新建队列
 	queue<LRItem> producers;
 	//加入产生式
@@ -134,7 +135,6 @@ void generateState(LRState& state) {
 		//取出点后字符
 		int after = right[p.positionInt];
 		if (isTerminalid(after)) { producers.pop(); continue; }//点后是终结符 弹出
-		//cout << "添加非终结符产生式：" << id2symbol(after) << endl;
 		//对点后是非终结符的项目进行扩展 计算向前看符号
 		//找到非终结符的所有产生式
 		set<int> lookaheads;
@@ -168,9 +168,9 @@ void generateState(LRState& state) {
 					//针对每一个向前看符号生成一个新的 LR 项目
 					// 
 					LRItem item(0, i, lookahead);
-					cout << "将要添加的LR项：\n";
+					/*cout << "将要添加的LR项：\n";
 					printLRItem(item);
-					cout << endl;
+					cout << endl;*/
 					if (state.LRItemsSet.count(item) == 0) 
 						{
 							state.LRItemsSet.insert(item);//状态内扩展 重复插入会自动去重？
@@ -184,8 +184,10 @@ void generateState(LRState& state) {
 		//弹出已经处理的项目
 		producers.pop();
 	}
-	cout << "状态内部扩展完毕：\n";
 	
+	//更新dfa中的状态
+	states[state.numberInt] = state;
+	//printLRState(state);
 }
 /*
 * 状态间扩展
@@ -201,22 +203,55 @@ void LRDFA::extendState(LRState& state, queue<int>& que) {
 		if (item.positionInt >= right.size()) continue;
 		//移进什么符号
 		int next = right[item.positionInt];
-		//移进得到的状态还未创建
-		if (state.edgesMap.find(next) == state.edgesMap.end()) {
-			LRItem newItem(item.positionInt + 1, item.gramarInt, item.predictiveSymbol);//移进后得到的新项
+		/*
+		- 获取将要移进的符号
+		- 得到移进后的产生式
+		- 如果该移进符号已经创建状态转移：加入产生式，对该状态重新做状态扩展，更新到dfa
+		- 如果该移进符号还未创建状态转移：新建一个临时状态加入产生式，做状态扩展，判断状态是否已经存在，更新到dfa
+		*/
+		//移进得到的状态还未创建 此处需要创建的是状态转移 如何判断是否需要转移到已有状态？
+		//如果移进符号得到的状态已经创建 但不知道是否需要新增产生式 如何判断？
+		LRItem newItem(item.positionInt + 1, item.gramarInt, item.predictiveSymbol);//移进后得到的新项
+		LRState newState;//可能的新状态
+		if (state.edgesMap.find(next) == state.edgesMap.end()) {//该移进符号还未创建状态转移
 			//需要新建新状态 新状态号->数组+1
-			LRState newState;
 			newState.LRItemsSet.insert(newItem);//项目加入新状态
-			newState.numberInt = statesVec.size();
-			//为当前状态添加状态转移
-			cout << "正在生成状态转移：" << id2symbol(next) << "->" << "状态：" << newState.numberInt << endl;
-			state.edgesMap[next] = newState.numberInt;
-			// 将新状态加入队列，等待扩展
-			que.push(newState.numberInt);
-			//添加到dfa的状态集
-			//cout << "Before push_back: " << &statesVec[0] << endl;
-			statesVec.push_back(newState);
-			//cout << "After push_back: " << &statesVec[0] << endl;
+			//对新生成的状态做内部扩展
+			generateState(newState);
+			cout << "处理产生式：\n";
+			printLRItem(newItem);
+			cout <<"移进符号" << id2symbol(next) << "将转移到\n";
+			printLRState(newState);
+			cout << endl;
+			//判断这个生成的新状态是否已经存在
+			int isExist = findExistingState(newState);
+			if (isExist != -1)//已经存在
+			{
+				//为当前状态添加状态转移
+				cout << "转移到已有状态：" << id2symbol(next) << "->" << "状态：" << isExist << endl;
+				state.edgesMap[next] = isExist;
+				//更新dfa中的状态
+				states[isExist] = state;
+			}
+			else {//否则需要加入dfa的状态集中
+				newState.numberInt = this->startState;//分配新状态号
+				cout << "生成新状态转移：" << id2symbol(next) << "->" << "状态：" << newState.numberInt << endl;
+				state.edgesMap[next] = newState.numberInt;
+				que.push(newState.numberInt);
+				//添加到dfa的状态集
+				//cout << "Before push_back: " << &statesVec[0] << endl;
+				states[this->startState] = newState;
+				this->startState = this->startState + 1;
+				//cout << "After push_back: " << &statesVec[0] << endl;
+			}
+		}
+		else {//该移进符号已经创建状态转移 拿到那个状态
+			int stateId = state.edgesMap.find(next)->second;
+			newState = states[stateId];
+			//将产生式加入这个状态中
+			newState.LRItemsSet.insert(newItem);
+			generateState(newState);//状态扩展
+			states[stateId] = newState;
 		}
 
 	}
@@ -232,22 +267,36 @@ LRDFA::LRDFA() {
 	First();
 	//将待处理状态入队
 	//初始化一个状态
-	LRState startState;
-	startState.LRItemsSet.insert(item0);
-	startState.numberInt = 0;  // 0号状态作为起始状态
-	statesVec.push_back(startState);  // 将起始状态加入状态集合
+	LRState start;
+	start.LRItemsSet.insert(item0);
+	start.numberInt = this->startState;  // 0号状态作为起始状态
+	states[this->startState]=start;  // 将起始状态加入状态集合
+	this->startState = this->startState + 1;	states[this->startState]=start;  // 将起始状态加入状态集合
 	//待处理队列
 	queue<int> que;
-	que.push(0);//0状态入栈
+	
+	//起始状态内部扩展
+	generateState(start); 
+	que.push(start.numberInt);//0状态入栈
+
 	while (!que.empty()) {
 		//取出待处理状态
-		LRState currentState = statesVec[que.front()];
-		//状态内部扩展
-		generateState(currentState);
-		//printLRState(currentState);
+		int currentStateId = que.front();
+		LRState currentState = states[currentStateId];
+		//把状态内部扩展放在每次生成新状态之后
 		//将新生成的状态入队
 		extendState(currentState, que);
 		printLRState(currentState);
 		que.pop();
 	}
+}
+//判断状态是否已经存在
+int LRDFA::findExistingState(const LRState& newState) {
+	auto it = states.find(newState.numberInt);  // 使用哈希表直接查
+	if (it != states.end()) {
+		// 如果找到了相同的状态，返回其状态号
+		return it->second.numberInt;
+	}
+	// 如果没有找到相同的状态，返回 -1 表示状态不存在
+	return -1;
 }

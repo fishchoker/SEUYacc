@@ -7,9 +7,12 @@
 #include<map>
 #include<set>
 #include <queue>
+#include <functional>
 #include"YaccParser.h"
 #include"symbolList.h"
 using namespace std;
+//提供自定义结构体的哈希函数实现 简化比较操作
+
 struct LRItem {
 	int positionInt = 0;//点的位置
 	int gramarInt = -1;//产生式标号
@@ -41,18 +44,49 @@ struct LRState {
 		LRItemsSet(other.LRItemsSet) {
 		// 直接拷贝成员变量，unordered_map和set会自动拷贝它们的内容
 	}
+
 };
 struct LRDFA {
-	int startState = 0;
-	vector<LRState> statesVec;  //存储所有的LRState，状态集
+	int startState = 0;//每新建一个状态就取用 然后自增 
+	unordered_map<int, LRState>  states;//存储所有的LRState，状态集 映射状态号和状态 存储的是拷贝而非引用
+	void generateState(LRState& state);
 	void extendState(LRState& state, queue<int>& que);
 	LRDFA();
+	int findExistingState(const LRState& newState);
 };
+
 extern vector< Producer> producerList;//产生式列表
 extern unordered_map<int, set<int> > firsts;
-void generateState(LRState& state);
+
 void First();
 void printFirsts();
 void printLRItem(const LRItem& item);
 void printLRState(const LRState& state);
+// 为自定义类型 LRItem 和 LRState 定义哈希函数
+namespace std {
+	template <>
+	struct hash<LRItem> {
+		size_t operator()(const LRItem& item) const {
+			size_t hash_value = 0;
+			hash<int> hasher;
+			hash_value ^= hasher(item.positionInt);
+			hash_value ^= hasher(item.gramarInt);
+			hash_value ^= hasher(item.predictiveSymbol);
+			return hash_value;
+		}
+	};
+	//新状态没有状态转移 只要LR项相同就是相同状态
+	template <>
+	struct hash<LRState> {
+		size_t operator()(const LRState& state) const {
+			size_t hash_value = 0;
+			hash<int> hasher;
+			hash_value ^= hasher(state.numberInt);
+			for (const auto& item : state.LRItemsSet) {
+				hash_value ^= hash<LRItem>()(item);
+			}
+			return hash_value;
+		}
+	};
+}
 #endif // !YACCDFA_H

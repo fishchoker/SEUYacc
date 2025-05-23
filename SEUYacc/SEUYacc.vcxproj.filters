@@ -27,9 +27,6 @@
     <ClInclude Include="resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="LRTableBuilder.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="ParserDriver.h">
       <Filter>头文件</Filter>
     </ClInclude>
