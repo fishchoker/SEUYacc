@@ -1,6 +1,6 @@
 %token c d
 
-%start translation_unit
+%start S'
 %%
 
 S'

@@ -20,10 +20,10 @@ struct Producer {
 extern vector<Producer> producerList;  // 产生式列表
 extern unordered_map<string, int> terminal;
 extern unordered_map<string, int> nonterminal;
-
+extern string startSymbol;//文法开始符号
 bool isTerminal(string s);
 bool isNonterminal(string s);
-
+extern int start;//文法开始符号的ID
 struct YaccParser {
 	int tID = 300;//终结符的起始ID
 	int nID = 500;//非终结符的起始ID
@@ -72,6 +72,7 @@ struct YaccParser {
 				if (flag) {
 					left = line;//当前产生式的左侧
 					flag=false;
+
 					continue;
 				}
 				temp.left = left;
@@ -101,35 +102,49 @@ struct YaccParser {
 			left += line[pos];
 			pos++;
 		}
-		if (left != "%token") {
-			//错误处理
-			return;
-		}
-		//终结符行 先跳过所有空格
-		while (line[pos] == ' ') { pos++; }
-		string temp;//每一个单词
-		while (pos < line.length()) {
-			if (line[pos] != ' ') {
-				//当前单词还未结束
-				temp += line[pos];
+		if (left == "%start")//提取文法开始符号
+		{
+			while (line[pos] == ' ') { pos++; }//跳过空格
+			while (pos < line.length()) {
+				if (line[pos] != ' ') {
+					//当前单词还未结束
+					startSymbol += line[pos];
+				}
+				else {
+					return;
+				}
+				pos++;
 			}
-			else {
-				//放入终结符列表
+		}
+			if (left != "%token") {
+				//错误处理
+				return;
+			}
+			//终结符行 先跳过所有空格
+			while (line[pos] == ' ') { pos++; }
+			string temp;//每一个单词
+			while (pos < line.length()) {
+				if (line[pos] != ' ') {
+					//当前单词还未结束
+					temp += line[pos];
+				}
+				else {
+					//放入终结符列表
+					tID++;
+					terminal[temp] = tID;
+					temp = "";
+				}
+				pos++;
+			}
+			if (temp != "")
+			{
 				tID++;
 				terminal[temp] = tID;
 				temp = "";
 			}
-			pos++;
-		}
-		if (temp != "")
-		{
-			tID++;
-			terminal[temp] = tID;
-			temp = "";
-		}
 	}
 	/*
-	* 提取非终结符 只能从产生式判断
+	* 提取非终结符 只能从产生式判断 
 	*/
 	void getNonterminal() {
 		//遍历产生式列表

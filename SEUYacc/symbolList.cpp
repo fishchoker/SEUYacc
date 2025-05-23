@@ -6,10 +6,13 @@ unordered_map<int, string> IdNonterminal;
 
 extern vector<Producer> producerList;  // 产生式列表
 vector<numProducer> numproducerList;  // 产生式列表
+string startSymbol;//文法开始符号
+int startId;//文法开始符号的ID
 /*
-* 定义空集（非终结符）的ID为-1，结束符的ID为1000
+* 定义空集（非终结符）的ID为-1，结束符的ID为0
 */
 void init() {
+	startId = symbol2id(startSymbol);
 	terminal["ε"] = -1;
 	IdTerminal[-1] = "ε";
 	terminal["$"] = 0;

@@ -187,7 +187,7 @@ void LRDFA::generateState(LRState& state) {
 	}
 	
 	//如果不行临时状态 更新dfa中的状态 
-	printLRState(state);
+	//printLRState(state);
 	if(state.numberInt!=-1)
 		states[state.numberInt] = state;
 	
@@ -235,14 +235,14 @@ void LRDFA::extendState(LRState& state, queue<int>& que) {
 			if (isExist != -1)//已经存在
 			{
 				//为当前状态添加状态转移
-				cout << "转移到已有状态：" << id2symbol(next) << "->" << "状态：" << isExist << endl;
+				//cout << "转移到已有状态：" << id2symbol(next) << "->" << "状态：" << isExist << endl;
 				state.edgesMap[next] = isExist;
 				//更新dfa中的状态
 				states[isExist] = state;
 			}
 			else {//否则需要加入dfa的状态集中
 				newState.numberInt = this->startState;//分配新状态号
-				cout << "生成新状态转移：" << id2symbol(next) << "->" << "状态：" << newState.numberInt << endl;
+				//cout << "生成新状态转移：" << id2symbol(next) << "->" << "状态：" << newState.numberInt << endl;
 				state.edgesMap[next] = newState.numberInt;
 				que.push(newState.numberInt);
 				//添加到dfa的状态集
@@ -267,15 +267,21 @@ void LRDFA::extendState(LRState& state, queue<int>& que) {
 /*
 * 生成DFA 定义空集（非终结符）的ID为-1，结束符的ID为1000
 */
+extern int startId;//文法开始符号的ID
 LRDFA::LRDFA() {
-	//初始化第一个项集 文法开始符号的产生式
-	LRItem item0(0, 0, unordered_set<int>{0});// 点位于起始 0号项 前瞻符为$
+	//初始化一个状态
+	LRState start;
+	//初始化第一个项集 放入文法开始符号的产生式
+	for (int i=0;i<numproducerList.size();i++) {
+		if (numproducerList[i].first == startId) {
+			LRItem item0(0, i, unordered_set<int>{0});// 点位于起始 文法开始符号项 前瞻符为$
+			start.LRItemsSet.insert(item0);
+		}
+	}
 	//得到first集
 	First();
 	//将待处理状态入队
-	//初始化一个状态
-	LRState start;
-	start.LRItemsSet.insert(item0);
+
 	start.numberInt = this->startState;  // 0号状态作为起始状态
 	states.push_back(start);  // 将起始状态加入状态集合
 	this->startState = this->startState + 1;  // 将起始状态加入状态集合

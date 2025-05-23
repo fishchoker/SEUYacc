@@ -31,9 +31,10 @@ int main() {
 	YaccParser parser;
 	parser.parsingYacc();
 	parser.getNonterminal();
+	test();
 	init();//完成符号到整数的双向映射
 	First();
-	//test();
+	
 	LRDFA dfa;
 	return 0;
 }
