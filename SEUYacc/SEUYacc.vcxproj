@@ -127,28 +127,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="ParserDriver.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="resource.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
+    <ClInclude Include="LRTableBuilder.h" />
+    <ClInclude Include="ParserDriver.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="symbolList.h" />
     <ClInclude Include="YaccDFA.h" />
     <ClInclude Include="YaccParser.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="LRTableBuilder.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="LRTableBuilder.cpp" />
     <ClCompile Include="maintest.cpp" />
-    <ClCompile Include="ParserDriver.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="ParserDriver.cpp" />
     <ClCompile Include="symbolList.cpp" />
-    <ClCompile Include="testLRTableBuilder.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="YaccDFA.cpp" />
     <ClCompile Include="YaccParser.cpp" />
   </ItemGroup>

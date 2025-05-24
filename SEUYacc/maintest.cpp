@@ -2,6 +2,9 @@
 #include"YaccParser.h"
 #include"symbolList.h"
 #include"YaccDFA.h"
+#include "LRTableBuilder.h" 
+#include "ParserDriver.h"
+  
 using namespace std;
 void test() {
 	//打印终结符
@@ -28,13 +31,36 @@ int main() {
 	/*
 	* 解析语法规则
 	*/
+	
 	YaccParser parser;
 	parser.parsingYacc();
 	parser.getNonterminal();
-	//test();
+	test();
 	init();//完成符号到整数的双向映射
+	cout << isTerminalid(301) << endl;
 	First();
-	//printFirsts();
+	
 	LRDFA dfa;
+
+	LRTableBuilder builder(dfa);
+	builder.endSymbol = 0;
+	builder.buildTables();
+
+	printActionTable(builder);
+	printGotoTable(builder);
+
+	// ====== 测试 ParserDriver ======
+	std::vector<int> tokenStream = { 301, 302, 302,0 }; // 模拟输入：c d d $
+	ParserDriver driver(builder, numproducerList);
+	// ====== 测试语法树 ======
+	auto syntaxTree = driver.parse(tokenStream);
+
+	if (syntaxTree) {
+		cout << "\n=== 语法树结构 ===" << endl;
+		driver.printSyntaxTree(syntaxTree);
+	}
+	else {
+		cout << "解析失败!" << endl;
+	}
 	return 0;
 }

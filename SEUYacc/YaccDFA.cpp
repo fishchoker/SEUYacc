@@ -3,7 +3,7 @@ unordered_map<int, set<int> > firsts;
 // 为自定义类型 LRItem 和 LRState 定义哈希函数
 
 /*
-* 求非终结符的first集
+* 求first集
 */
 void First() {
 	//初始化终结符集为它本身
@@ -123,7 +123,7 @@ void printLRState(const LRState& state) {
 * 状态内扩展
 */
 void LRDFA::generateState(LRState& state) {
-	cout << state.numberInt<< "状态内部扩展\n";
+	//cout << state.numberInt<< "状态内部扩展\n";
 	//新建队列
 	queue<LRItem> producers;
 	//加入产生式
@@ -328,7 +328,7 @@ LRDFA::LRDFA() {
 		//把状态内部扩展放在每次生成新状态之后
 		//将新生成的状态入队
 		extendState(currentState, que);
-		printLRState(currentState);
+		//printLRState(currentState);
 		states[currentStateId] = currentState;//更新到dfa
 		que.pop();
 	}

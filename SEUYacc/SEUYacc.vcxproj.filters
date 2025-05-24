@@ -24,10 +24,13 @@
     <ClInclude Include="YaccDFA.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="resource.h">
+    <ClInclude Include="LRTableBuilder.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="ParserDriver.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -48,9 +51,6 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="ParserDriver.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="testLRTableBuilder.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
