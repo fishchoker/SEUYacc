@@ -35,8 +35,8 @@ struct YaccParser {
 	*/
 	YaccParser() {
 		//读取词法规则文件
-		//string filename = "./rule/c99.y";
-		string filename = "./rule/test.y";
+		string filename = "./rule/c99.y";
+		//string filename = "./rule/test.y";
 		ifile.open(filename);
 		//判断是否正常读取
 		if (!ifile.is_open()) {

@@ -26,8 +26,11 @@ void First() {
 			vector<int> right=producer.second;//得到产生式右侧
 			//对于 A → ε 的产生式，right 为空，此时应直接添加 ε
 			if (right.empty()) {
-				firsts[left].insert(-1);
-				change = true;
+				if (firsts[left].count(-1) == 0)
+				{
+					firsts[left].insert(-1);
+					change = true;
+				}
 				continue;
 			}
 			for (auto& item : right)//遍历右侧符号
@@ -36,20 +39,20 @@ void First() {
 				auto& thisSet = firsts[item];
 				//将当前符号的FIRST集(除ε外)加入左部符号的FIRST集
 				for (auto& i : thisSet) {
-					if (i == -1) continue;//跳过空集
-					if (firsts[left].count(i) == 0) { // 如果未包含该符号
+					if (i == -1) continue;//跳过空串 处理下一个符号
+					if (firsts[left].count(i) == 0) { // 左部符号 left 的 FIRST 集合中是否已经包含当前符号 i
 						change = true; // 标记需要继续迭代
 						firsts[left].insert(i); // 加入FIRST集
 					}
 				}
 				if (thisSet.count(-1) == 0) {
 					hasEpsilon = false;
-					break; // 不能推出ε，终止处理后续符号
+					break; // 不能推出ε，终结符已经确定
 				}
 			}
-			if (hasEpsilon) {
-				if (firsts[left].count(-1) == 0) {
-					firsts[left].insert(-1);
+			if (hasEpsilon) {//前面所有的符号都可能推出空串
+				if (firsts[left].count(-1) == 0) {//左部符号 left 的 FIRST 集合中是否包含空串
+					firsts[left].insert(-1);//插入
 					change = true;
 				}
 			}
@@ -126,7 +129,7 @@ void LRDFA::generateState(LRState& state) {
 	//加入产生式
 	for (auto& p : state.LRItemsSet)
 		producers.push(p);
-	while (!producers.empty()) {
+	while (!producers.empty()) {//未处理的LR项
 		auto& p = producers.front();//取出最前面的LR项
 		auto& producer = numproducerList[p.gramarInt];//取出该项对应的产生式
 		vector<int> right = producer.second;
@@ -135,14 +138,14 @@ void LRDFA::generateState(LRState& state) {
 		//点后是终结符
 		//取出点后字符
 		int after = right[p.positionInt];
-		if (isTerminalid(after)) { producers.pop(); continue; }//点后是终结符 弹出
+		if (isTerminalid(after)) { producers.pop(); continue; }//点后是终结符 向前看符号？
 		//对点后是非终结符的项目进行扩展 计算向前看符号
 		//找到非终结符的所有产生式
 		unordered_set<int> lookaheads;
 		bool canDeriveEpsilon = true;//是否能推出空串
 
 		// 计算β部分的FIRST集（点后的剩余符号）
-		for (int i = p.positionInt + 1; i < right.size(); ++i) {
+		for (int i = p.positionInt + 1; i < right.size(); ++i) {//非终结符后面的位置
 			int symbol = right[i];
 			auto& firstSet = firsts[symbol];//取出first集
 
@@ -195,77 +198,102 @@ void LRDFA::generateState(LRState& state) {
 /*
 * 状态间扩展
 */
+//void LRDFA::extendState(LRState& state, queue<int>& que) {
+//	//遍历当前状态的项集
+//	//printLRState(state);
+//	for (auto& item : state.LRItemsSet) {
+//		//取出产生式
+//		auto& producer = numproducerList[item.gramarInt];
+//		vector<int> right = producer.second;
+//		//判断点的位置 若在结尾跳过
+//		if (item.positionInt >= right.size()) continue;
+//		//移进什么符号
+//		int next = right[item.positionInt];
+//		/*
+//		- 获取将要移进的符号
+//		- 得到移进后的产生式
+//		- 如果该移进符号已经创建状态转移：加入产生式，对该状态重新做状态扩展，更新到dfa
+//		- 如果该移进符号还未创建状态转移：新建一个临时状态加入产生式，做状态扩展，判断状态是否已经存在，更新到dfa
+//		*/
+//		LRItem newItem(item.positionInt + 1, item.gramarInt, item.predictiveSymbol);//移进后得到的新项
+//		LRState newState;//可能的新状态
+//		if (state.edgesMap.find(next) == state.edgesMap.end()) {//该移进符号还未创建状态转移
+//			//需要新建新状态 新状态号->数组+1
+//			newState.LRItemsSet.insert(newItem);//项目加入新状态
+//			//对新生成的状态做内部扩展
+//			generateState(newState);
+//			//cout << "处理产生式：\n";
+//			//printLRItem(newItem);
+//			//cout <<"移进符号" << id2symbol(next) << "将转移到\n";
+//			//printLRState(newState);
+//			//cout << endl;
+//			//判断这个生成的新状态是否已经存在
+//			int isExist = findExistingState(newState);
+//			if (isExist != -1)//已经存在
+//			{
+//				//为当前状态添加状态转移
+//				//cout << "转移到已有状态：" << id2symbol(next) << "->" << "状态：" << isExist << endl;
+//				state.edgesMap[next] = isExist;
+//				//更新dfa中的状态
+//				states[state.numberInt] = state;
+//			}
+//			else {//否则需要加入dfa的状态集中
+//				newState.numberInt = this->startState;//分配新状态号
+//				//cout << "生成新状态转移：" << id2symbol(next) << "->" << "状态：" << newState.numberInt << endl;
+//				state.edgesMap[next] = newState.numberInt;
+//				que.push(newState.numberInt);
+//				//添加到dfa的状态集
+//				//cout << "Before push_back: " << &statesVec[0] << endl;
+//				states.push_back(newState);
+//				this->startState = this->startState + 1;
+//				//cout << "After push_back: " << &statesVec[0] << endl;
+//			}
+//		}
+//		//else {//该移进符号已经创建状态转移 拿到那个状态
+//		//	int stateId = state.edgesMap.find(next)->second;
+//		//	newState = states[stateId];
+//		//	//将产生式加入这个状态中
+//		//	newState.LRItemsSet.insert(newItem);
+//		//	generateState(newState);//状态扩展
+//		//	states[stateId] = newState;
+//		//}
+//
+//	}
+//}
 void LRDFA::extendState(LRState& state, queue<int>& que) {
-	//遍历当前状态的项集
-	//printLRState(state);
+	//遍历所有的产生式 按移进符号进行分组
+	map<int, LRState> symbolToTempStates;
 	for (auto& item : state.LRItemsSet) {
-		//取出产生式
-		auto& producer = numproducerList[item.gramarInt];
+		auto& producer = numproducerList[item.gramarInt];//取产生式
 		vector<int> right = producer.second;
-		//判断点的位置 若在结尾跳过
-		if (item.positionInt >= right.size()) continue;
-		//移进什么符号
-		int next = right[item.positionInt];
-		/*
-		- 获取将要移进的符号
-		- 得到移进后的产生式
-		- 如果该移进符号已经创建状态转移：加入产生式，对该状态重新做状态扩展，更新到dfa
-		- 如果该移进符号还未创建状态转移：新建一个临时状态加入产生式，做状态扩展，判断状态是否已经存在，更新到dfa
-		*/
-		//cout << "移进前：\n";
-		//printLRItem(item);
-		//cout << endl;
-		LRItem newItem(item.positionInt + 1, item.gramarInt, item.predictiveSymbol);//移进后得到的新项
-		//cout << "移进后：\n";
-		//printLRItem(newItem);
-		//cout << endl;
-		LRState newState;//可能的新状态
-		if (state.edgesMap.find(next) == state.edgesMap.end()) {//该移进符号还未创建状态转移
-			//需要新建新状态 新状态号->数组+1
-			newState.LRItemsSet.insert(newItem);//项目加入新状态
-			//对新生成的状态做内部扩展
-			generateState(newState);
-			//cout << "处理产生式：\n";
-			//printLRItem(newItem);
-			//cout <<"移进符号" << id2symbol(next) << "将转移到\n";
-			//printLRState(newState);
-			//cout << endl;
-			//判断这个生成的新状态是否已经存在
-			int isExist = findExistingState(newState);
-			if (isExist != -1)//已经存在
-			{
-				//为当前状态添加状态转移
-				//cout << "转移到已有状态：" << id2symbol(next) << "->" << "状态：" << isExist << endl;
-				state.edgesMap[next] = isExist;
-				//更新dfa中的状态
-				states[state.numberInt] = state;
-			}
-			else {//否则需要加入dfa的状态集中
-				newState.numberInt = this->startState;//分配新状态号
-				//cout << "生成新状态转移：" << id2symbol(next) << "->" << "状态：" << newState.numberInt << endl;
-				state.edgesMap[next] = newState.numberInt;
-				que.push(newState.numberInt);
-				//添加到dfa的状态集
-				//cout << "Before push_back: " << &statesVec[0] << endl;
-				states.push_back(newState);
-				this->startState = this->startState + 1;
-				//cout << "After push_back: " << &statesVec[0] << endl;
-			}
-		}
-		else {//该移进符号已经创建状态转移 拿到那个状态
-			int stateId = state.edgesMap.find(next)->second;
-			newState = states[stateId];
-			//将产生式加入这个状态中
-			newState.LRItemsSet.insert(newItem);
-			generateState(newState);//状态扩展
-			states[stateId] = newState;
-		}
+		if (item.positionInt >= right.size()) continue;//点在结尾的项没有状态转移
 
+		int next = right[item.positionInt];//移进的符号
+		LRItem newItem(item.positionInt + 1, item.gramarInt, item.predictiveSymbol);
+		symbolToTempStates[next].LRItemsSet.insert(newItem); // 按符号分组 已经生成了临时的新状态
 	}
+	//遍历所有的移进符号的新状态
+	for (auto& entry : symbolToTempStates) {
+		int symbol = entry.first;
+		LRState& tempState = entry.second;
+		generateState(tempState); // 生成闭包
+		int isExist = findExistingState(tempState);
+		if (isExist != -1) {
+			state.edgesMap[symbol] = isExist;
+		}
+		else {
+			tempState.numberInt = startState;
+			startState++;
+			states.push_back(tempState);
+			que.push(tempState.numberInt);
+			state.edgesMap[symbol] = tempState.numberInt;
+		}
+	}
+	states[state.numberInt] = state;//更新回dfa
 }
 //重复状态判断
 /*
-* 生成DFA 定义空集（非终结符）的ID为-1，结束符的ID为1000
+* 生成DFA 定义空集（非终结符）的ID为-1，结束符的ID为0
 */
 extern int startId;//文法开始符号的ID
 LRDFA::LRDFA() {
@@ -275,6 +303,7 @@ LRDFA::LRDFA() {
 	for (int i=0;i<numproducerList.size();i++) {
 		if (numproducerList[i].first == startId) {
 			LRItem item0(0, i, unordered_set<int>{0});// 点位于起始 文法开始符号项 前瞻符为$
+			printLRItem(item0); cout << endl;
 			start.LRItemsSet.insert(item0);
 		}
 	}
@@ -300,6 +329,7 @@ LRDFA::LRDFA() {
 		//将新生成的状态入队
 		extendState(currentState, que);
 		printLRState(currentState);
+		states[currentStateId] = currentState;//更新到dfa
 		que.pop();
 	}
 }
