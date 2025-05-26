@@ -18,7 +18,8 @@ bool LRTableBuilder::isReduceItem(const LRItem& item) const {
 }
 
 bool LRTableBuilder::isAcceptItem(const LRItem& item) const {
-    if (item.gramarInt != 0) return false;
+    if (item.gramarInt != numproducerList.size()-1) 
+        return false;
     if (!isReduceItem(item)) return false;
     int dollarId = symbol2id("$");
     return item.predictiveSymbol.find(dollarId) != item.predictiveSymbol.end();
@@ -26,6 +27,37 @@ bool LRTableBuilder::isAcceptItem(const LRItem& item) const {
 
 void LRTableBuilder::buildTables() {
     int dollarId = symbol2id("$");
+
+    // 定义运算符优先级 (数值越大优先级越高)
+    std::unordered_map<int, int> precedence = {
+        {symbol2id("||"), 1},
+        {symbol2id("&&"), 2},
+        {symbol2id("|"), 3},
+        {symbol2id("^"), 4},
+        {symbol2id("&"), 5},
+        {symbol2id("=="), 6}, {symbol2id("!="), 6},
+        {symbol2id("<"), 7}, {symbol2id("<="), 7}, {symbol2id(">"), 7}, {symbol2id(">="), 7},
+        {symbol2id("<<"), 8}, {symbol2id(">>"), 8},
+        {symbol2id("+"), 9}, {symbol2id("-"), 9},
+        {symbol2id("*"), 10}, {symbol2id("/"), 10}, {symbol2id("%"), 10},
+        {symbol2id("!"), 11}, {symbol2id("~"), 11}, {symbol2id("++"), 11}, {symbol2id("--"), 11}
+    };
+
+    // 定义运算符结合性 (0=无结合性，1=左结合，2=右结合)
+    std::unordered_map<int, int> associativity = {
+        {symbol2id("||"), 1}, {symbol2id("&&"), 1},
+        {symbol2id("|"), 1}, {symbol2id("^"), 1}, {symbol2id("&"), 1},
+        {symbol2id("=="), 1}, {symbol2id("!="), 1},
+        {symbol2id("<"), 1}, {symbol2id("<="), 1}, {symbol2id(">"), 1}, {symbol2id(">="), 1},
+        {symbol2id("<<"), 1}, {symbol2id(">>"), 1},
+        {symbol2id("+"), 1}, {symbol2id("-"), 1},
+        {symbol2id("*"), 1}, {symbol2id("/"), 1}, {symbol2id("%"), 1},
+        {symbol2id("!"), 0}, {symbol2id("~"), 0}, {symbol2id("++"), 0}, {symbol2id("--"), 0},
+        {symbol2id("="), 2}, {symbol2id("+="), 2}, {symbol2id("-="), 2}, {symbol2id("*="), 2},
+        {symbol2id("/="), 2}, {symbol2id("%="), 2}, {symbol2id("&="), 2}, {symbol2id("|="), 2},
+        {symbol2id("^="), 2}, {symbol2id("<<="), 2}, {symbol2id(">>="), 2}
+    };
+
     for (int stateId = 0; stateId < (int)dfa.states.size(); ++stateId) {
         const LRState& state = dfa.states[stateId];
 
@@ -57,25 +89,79 @@ void LRTableBuilder::buildTables() {
 
                 if (isAcceptItem(item)) {
                     std::cout << "    Adding ACCEPT action on '$'" << std::endl;
-                    ACTION[stateId][dollarId] = Action(ActionType::ACCEPT, 0);
+                    ACTION[stateId][dollarId] = Action(ActionType::ACCEPT, numproducerList.size() - 1);
                 }
                 else {
                     for (int lookahead : item.predictiveSymbol) {
                         if (!isTerminalid(lookahead)) continue;
 
+                        // 获取当前产生式的优先级
+                        int reducePrec = 0;
+                        if (precedence.count(lookahead)) {
+                            reducePrec = precedence[lookahead];
+                        }
+
                         if (ACTION[stateId].count(lookahead)) {
                             auto& oldAction = ACTION[stateId][lookahead];
-                            std::cerr << "冲突检测: 状态 " << stateId << " 对终结符 " << id2symbol(lookahead)
-                                << " 存在多种动作！已有动作类型: "
-                                << (oldAction.type == ActionType::SHIFT ? "SHIFT" :
-                                    oldAction.type == ActionType::REDUCE ? "REDUCE" :
-                                    oldAction.type == ActionType::ACCEPT ? "ACCEPT" : "UNKNOWN")
-                                << ", 试图插入 REDUCE by prod " << item.gramarInt << std::endl;
-                            // 这里暂时选择保留原动作不覆盖
-                            continue;
+
+                            // 处理移进-规约冲突
+                            if (oldAction.type == ActionType::SHIFT) {
+                                // 获取移进符号的优先级
+                                int shiftPrec = 0;
+                                if (precedence.count(lookahead)) {
+                                    shiftPrec = precedence[lookahead];
+                                }
+
+                                // 根据优先级和结合性解决冲突
+                                if (reducePrec > shiftPrec) {
+                                    // 规约优先级更高，选择规约
+                                    std::cout << "    Resolving conflict: REDUCE by prod " << item.gramarInt
+                                        << " (prec " << reducePrec << ") over SHIFT (prec " << shiftPrec << ")" << std::endl;
+                                    ACTION[stateId][lookahead] = Action(ActionType::REDUCE, item.gramarInt);
+                                }
+                                else if (reducePrec == shiftPrec) {
+                                    // 优先级相同，根据结合性决定
+                                    if (associativity.count(lookahead)) {
+                                        if (associativity[lookahead] == 1) {
+                                            // 左结合，选择规约
+                                            std::cout << "    Resolving conflict: REDUCE by prod " << item.gramarInt
+                                                << " (left-associative)" << std::endl;
+                                            ACTION[stateId][lookahead] = Action(ActionType::REDUCE, item.gramarInt);
+                                        }
+                                        else if (associativity[lookahead] == 2) {
+                                            // 右结合，选择移进
+                                            std::cout << "    Resolving conflict: SHIFT (right-associative)" << std::endl;
+                                            // 保持原来的SHIFT动作
+                                        }
+                                        else {
+                                            // 无结合性，报错
+                                            std::cerr << "Error: Non-associative operator " << id2symbol(lookahead)
+                                                << " in conflict at state " << stateId << std::endl;
+                                        }
+                                    }
+                                    else {
+                                        // 默认左结合
+                                        std::cout << "    Resolving conflict: REDUCE by prod " << item.gramarInt
+                                            << " (default left-associative)" << std::endl;
+                                        ACTION[stateId][lookahead] = Action(ActionType::REDUCE, item.gramarInt);
+                                    }
+                                }
+                                else {
+                                    // 移进优先级更高，保持SHIFT
+                                    std::cout << "    Resolving conflict: SHIFT (prec " << shiftPrec
+                                        << ") over REDUCE (prec " << reducePrec << ")" << std::endl;
+                                }
+                            }
+                            else if (oldAction.type == ActionType::REDUCE) {
+                                // 规约-规约冲突，选择第一个产生式（或根据其他规则）
+                                std::cerr << "Reduce-Reduce conflict: State " << stateId << " on terminal " << id2symbol(lookahead)
+                                    << " between prod " << oldAction.target << " and prod " << item.gramarInt << std::endl;
+                            }
                         }
-                        std::cout << "    Adding REDUCE by prod " << item.gramarInt << " on terminal '" << id2symbol(lookahead) << "'" << std::endl;
-                        ACTION[stateId][lookahead] = Action(ActionType::REDUCE, item.gramarInt);
+                        else {
+                            std::cout << "    Adding REDUCE by prod " << item.gramarInt << " on terminal '" << id2symbol(lookahead) << "'" << std::endl;
+                            ACTION[stateId][lookahead] = Action(ActionType::REDUCE, item.gramarInt);
+                        }
                     }
                 }
             }

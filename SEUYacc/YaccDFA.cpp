@@ -10,7 +10,7 @@ void First() {
 	for (auto& t : IdTerminal) {
 		firsts[t.first] = { t.first };
 	}
-	//终结符集 先初始化为空
+	//非终结符集 先初始化为空
 	for (auto& t : IdNonterminal) {
 		firsts[t.first] = {};
 	}
@@ -296,17 +296,19 @@ void LRDFA::extendState(LRState& state, queue<int>& que) {
 * 生成DFA 定义空集（非终结符）的ID为-1，结束符的ID为0
 */
 extern int startId;//文法开始符号的ID
-LRDFA::LRDFA() {
+void LRDFA::generateLRDFA() {
 	//初始化一个状态
 	LRState start;
-	//初始化第一个项集 放入文法开始符号的产生式
-	for (int i=0;i<numproducerList.size();i++) {
-		if (numproducerList[i].first == startId) {
-			LRItem item0(0, i, unordered_set<int>{0});// 点位于起始 文法开始符号项 前瞻符为$
-			printLRItem(item0); cout << endl;
-			start.LRItemsSet.insert(item0);
-		}
-	}
+	////初始化第一个项集 放入文法开始符号的产生式
+	//for (int i=0;i<numproducerList.size();i++) {
+	//	if (numproducerList[i].first == startId) {
+	//		LRItem item0(0, i, unordered_set<int>{0});// 点位于起始 文法开始符号项 前瞻符为$
+	//		printLRItem(item0); cout << endl;
+	//		start.LRItemsSet.insert(item0);
+	//	}
+	//}
+	LRItem item0(0, numproducerList.size()-1, unordered_set<int>{0});
+	start.LRItemsSet.insert(item0);
 	//得到first集
 	First();
 	//将待处理状态入队

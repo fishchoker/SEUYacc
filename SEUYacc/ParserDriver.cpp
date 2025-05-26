@@ -38,13 +38,25 @@ std::shared_ptr<ParseTreeNode> ParserDriver::parse(const std::vector<int>& token
             break;
 
         case ActionType::ACCEPT: {
-            std::cout << "Parsing successful." << std::endl;
-            if (nodeStack.size() != 1) {
-                std::cerr << "Error: Final stack size incorrect." << std::endl;
-                return nullptr;
+            const numProducer& prod = productions[action.target];
+            int lhs = prod.first;
+            const std::vector<int>& rhs = prod.second;
+
+            auto newNode = std::make_shared<ParseTreeNode>(lhs);
+            for (size_t i = 0; i < rhs.size(); ++i) {
+                stateStack.pop();
+                newNode->children.insert(newNode->children.begin(), nodeStack.top());
+                nodeStack.pop();
             }
-            return nodeStack.top();
+
+            std::cout << "Accept with production " << action.target << std::endl;
+            if (!nodeStack.empty()) {
+                std::cerr << "Warning: nodeStack not empty before final push." << std::endl;
+            }
+
+            return newNode;  // 直接返回构造的 S' 节点作为整棵语法树
         }
+
 
         default:
             std::cerr << "Unknown action type." << std::endl;
@@ -53,28 +65,28 @@ std::shared_ptr<ParseTreeNode> ParserDriver::parse(const std::vector<int>& token
     }
 }
 
-void ParserDriver::reduce(int productionId) {
-    const numProducer& prod = productions[productionId];
-    int lhs = prod.first;
-    const std::vector<int>& rhs = prod.second;
+void ParserDriver::reduce(int productionId) {//输入规约的产生式编号
+    const numProducer& prod = productions[productionId];//获取产生式
+    int lhs = prod.first;//产生式左侧符号编号
+    const std::vector<int>& rhs = prod.second;//产生式右侧符号编号序列
 
-    auto newNode = std::make_shared<ParseTreeNode>(lhs);
+    auto newNode = std::make_shared<ParseTreeNode>(lhs);//创建新的非终结符节点
 
-    for (size_t i = 0; i < rhs.size(); ++i) {
+    for (size_t i = 0; i < rhs.size(); ++i) {//弹出状态栈和节点栈，并将弹出的节点作为非终结符节点的子节点
         stateStack.pop();
         newNode->children.insert(newNode->children.begin(), nodeStack.top());
         nodeStack.pop();
     }
 
-    int topState = stateStack.top();
-    auto gotoIt = table.GOTO[topState].find(lhs);
+    int topState = stateStack.top();//获得当前状态栈的栈顶状态
+    auto gotoIt = table.GOTO[topState].find(lhs);//查GOTO表，相当于读入规约式的非终结符，转入新状态
     if (gotoIt == table.GOTO[topState].end()) {
         std::cerr << "GOTO error: No transition for state " << topState << " on symbol " << lhs << std::endl;
         exit(1);
     }
 
-    stateStack.push(gotoIt->second);
-    nodeStack.push(newNode);
+    stateStack.push(gotoIt->second);//压入新状态
+    nodeStack.push(newNode);//压入非终结符构造的节点
 
     std::cout << "Reduce by production " << productionId << std::endl;
     printStacks();
@@ -107,24 +119,25 @@ void ParserDriver::printStacks() {
     std::cout << std::endl;
 }
 
-// 新增：打印语法树实现
 void ParserDriver::printSyntaxTree(const std::shared_ptr<ParseTreeNode>& node, int depth) {
     if (!node) return;
 
+    // 打印缩进
     for (int i = 0; i < depth; ++i) {
-        std::cout << "  ";
+        std::cout << (i == depth - 1 ? "├── " : "│   ");
     }
 
-    std::cout << "Symbol: " << node->symbol;
+    // 打印节点信息
+    std::cout << id2symbol(node->symbol);
     if (!node->children.empty()) {
-        std::cout << " -> [";
+        std::cout << " →";
         for (const auto& child : node->children) {
-            std::cout << child->symbol << " ";
+            std::cout << " " << id2symbol(child->symbol);
         }
-        std::cout << "]";
     }
     std::cout << std::endl;
 
+    // 递归打印子节点
     for (const auto& child : node->children) {
         printSyntaxTree(child, depth + 1);
     }

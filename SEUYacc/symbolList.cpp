@@ -27,6 +27,7 @@ void init() {
 		if (i == IdNonterminal.end())
 			IdNonterminal[it->second] = it->first;
 	}
+
 	for (auto& producer : producerList) {
 		int left = symbol2id(producer.left);
 		vector<int> right;
@@ -36,6 +37,19 @@ void init() {
 		//存储新产生式
 		numproducerList.push_back(numProducer(left, right));
 	}
+	////添加一个产生式 从一个其他非终结符1000到文法开始符号
+	nonterminal["start"] = 1000;
+	IdNonterminal[1000] = "start";
+	vector<int> right;
+	right.push_back(startId);
+	numproducerList.push_back(numProducer(1000, right));
+	vector<string> r;
+	r.push_back(startSymbol);
+	Producer p;
+	p.left = "start";
+	p.right = r;
+	producerList.push_back(p);
+
 }
 string id2symbol(int ID) {
 	if (ID < 500)//终结符
@@ -85,4 +99,40 @@ bool isNonterminalid(int id)
 		return true;
 	}
 	return false;
+}
+void creatHead() {
+	const string& output_file = "./token.h";
+	// 将 terminal 映射转换为可排序的 vector
+	std::vector<std::pair<std::string, int>> token_list;
+	for (auto it = terminal.begin(); it != terminal.end(); ++it) {
+		token_list.emplace_back(it->first, it->second);
+	}
+
+	// 按 token 值升序排序
+	std::sort(token_list.begin(), token_list.end(),
+		[](const std::pair<std::string, int>& a, const std::pair<std::string, int>& b) {
+			return a.second < b.second;
+		});
+
+	// 生成 Bison 格式声明并输出到文件
+	std::ofstream outfile(output_file);
+	if (!outfile.is_open()) {
+		std::cerr << "Failed to open the file for writing!" << std::endl;
+		return ;
+	}
+
+	for (size_t i = 0; i < token_list.size(); ++i) {
+		const std::pair<std::string, int>& token = token_list[i];
+		int value = token.second;
+
+		// 跳过单字符 token (ASCII 0-255)
+		if (value < 256) continue;
+
+		// 构建 %token 行并写入文件
+		outfile << "%token " << token.first << " " << value << "\n";
+	}
+
+	outfile.close();
+	cout << "导出！\n";
+	return ;
 }

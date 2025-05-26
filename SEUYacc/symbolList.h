@@ -17,4 +17,5 @@ int symbol2id(string symbol);
 
 bool isTerminalid(int id);
 bool isNonterminalid(int id);
+void creatHead();
 #endif // SYMBOL_LIST_H

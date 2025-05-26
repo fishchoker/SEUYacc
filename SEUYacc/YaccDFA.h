@@ -71,7 +71,7 @@ struct LRDFA {
 	vector<LRState>  states;//存储所有的LRState，状态集 映射状态号和状态 存储的是拷贝而非引用
 	void generateState(LRState& state);
 	void extendState(LRState& state, queue<int>& que);
-	LRDFA();
+	void generateLRDFA();
 	int findExistingState(const LRState& newState);
 };
 

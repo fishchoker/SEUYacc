@@ -1,11 +1,7 @@
 %token c d
 
-%start S'
+%start S
 %%
-
-S'
-	: S
-	;
 
 S
 	: C C

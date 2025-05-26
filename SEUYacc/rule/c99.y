@@ -415,9 +415,15 @@ expression_statement
 	;
 
 selection_statement
-	: IF '(' expression ')' statement
-	| IF '(' expression ')' statement ELSE statement
-	| SWITCH '(' expression ')' statement
+    : if_statement
+    | switch_statement;
+
+if_statement
+    : IF '(' expression ')' statement
+    | IF '(' expression ')' statement ELSE if_statement;
+
+switch_statement
+    : SWITCH '(' expression ')' statement;
 	;
 
 iteration_statement
